@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "status": "ongoing",
+
+    "players": {
+      "0": "mat",
+      "1": "dav",
+      "2": "adr"
+    },
+    "big_blind": 10,
+    "small_blind": 5,
+    "buy_in": 200
+  },
+
+  "hands": [
+    {
+      "status": "ended",
+
+      "pre_flop": {
+        "0": ["7h", "Js"],
+        "1": ["8h", "Qs"],
+        "2": ["9h", "Ks"]
+      },
+      "pre_flop_bets": ["C", "R10", "C", "C"],
+
+      "flop": ["Ac", "Ad", "Ts"],
+      "flop_bets": ["X", "R20", "F", "C"],
+
+      "turn": "4d",
+      "turn_bets": ["X", "X"],
+
+      "river": "3s",
+      "river_bets": ["X", "R10", "R20", "R5", "C"]
+    },
+
+    {
+      "status": "ended",
+
+      "pre_flop": {
+        "0": ["7h", "Js"],
+        "1": ["8h", "Qs"],
+        "2": ["9h", "Ks"]
+      },
+      "pre_flop_bets": ["C", "R10", "F", "C"],
+
+      "flop": ["Ac", "Ad", "Ts"],
+      "flop_bets": ["X", "R20", "F"]
+    },
+
+    {
+      "status": "ended",
+
+      "pre_flop": {
+        "0": ["7h", "Js"],
+        "1": ["8h", "Qs"],
+        "2": ["9h", "Ks"]
+      },
+      "pre_flop_bets": ["C", "R10", "F", "F"]
+    }
+  ]
+}
