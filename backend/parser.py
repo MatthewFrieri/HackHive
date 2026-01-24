@@ -11,7 +11,7 @@ class Status(Enum):
     ONGOING = "ongoing"
     ENDED = "ended"
 
-class PositionIterator:
+class PosIterator:
     # Starts iterating on the small blind
 
     def __init__(self, items: list, dealer_index: int):
@@ -19,16 +19,14 @@ class PositionIterator:
         self.start_index = (dealer_index + 1) % len(items)
         self.index = self.start_index
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if not self.items:
-            raise StopIteration
+    def next(self) -> str:
         value = self.items[self.index]
         self.index = (self.index + 1) % len(self.items)
         return value
-
+ 
+    def peek(self) -> str:
+        return self.items[self.index]
+    
     def remaining(self) -> list:
         return self.items
 
@@ -56,25 +54,47 @@ class PositionIterator:
 class Parser:
 
     @staticmethod
-    def handle_action(it: PositionIterator, action: str, position_bets: dict):
-        pos = next(it)
+    def _handle_actions(it: PosIterator, actions: list, pos_bets: dict, pos_stacks: dict):
+        last_raise_pos = None
+        start_pos = it.peek()
 
-        if action == Action.FOLD.value:
-            it.remove(pos)
-            return len(it.remaining()) == 1
-        elif action == Action.CHECK.value:
-            pass
-        elif action == Action.CALL.value:
-            position_bets[pos] = max(position_bets.values())
-        elif action.startswith(Action.RAISE.value):
-            raise_amount = int(action[1:])
-            position_bets[pos] = max(position_bets.values()) + raise_amount
-        else:
-            raise Exception("Invalid betting action")
-        return False
+        if len(actions) == 0:
+            raise Exception("There must be at least one action")
+        
+        for action in actions:
+            pos = it.next()
+
+            if action == Action.FOLD.value:
+                it.remove(pos)
+            elif action == Action.CHECK.value:
+                pass
+            elif action == Action.CALL.value:
+                diff = max(pos_bets.values()) - pos_bets[pos]
+                pos_bets[pos] += diff
+                pos_stacks[pos] -= diff
+            elif action.startswith(Action.RAISE.value):
+                diff = max(pos_bets.values()) - pos_bets[pos]
+                raise_amount = int(action[1:])
+                pos_bets[pos] += diff + raise_amount
+                pos_stacks[pos] -= diff + raise_amount
+                last_raise_pos = pos
+            else:
+                raise Exception("Invalid betting action")
+
+        is_over_by_fold = len(it.remaining()) == 1
+
+        # Full circle of checks and folds (or checks, folds, and calls on pre flop)
+        if last_raise_pos is None and start_pos == it.peek():
+            return True, is_over_by_fold
+        
+        # There was a raise and everyone else called or folded
+        if last_raise_pos == it.peek() and not actions[-1].startswith(Action.RAISE.value):
+            return True, is_over_by_fold
+        
+        return False, is_over_by_fold
     
     @staticmethod
-    def get_winner(pre_flop: dict, board: list):
+    def _get_winner(pre_flop: dict, board: list):
         board = [Card.new(card) for card in board]
         evaluator = Evaluator()
         pos_eval = {}
@@ -84,65 +104,76 @@ class Parser:
         return min(pos_eval, key=pos_eval.get) # Lower eval is better
 
     @classmethod
-    def handle_hand_over(cls, it: PositionIterator, hand: dict, position_bets: dict, position_stacks: dict):
+    def _handle_hand_end(cls, it: PosIterator, hand: dict, pos_bets: dict, pos_stacks: dict):
         if len(it.remaining()) == 1:
-            winner = next(it)
+            winner = it.next()
         else:
             positions = it.remaining()
             pre_flop = {k: v for k, v in hand["pre_flop"].items() if k in positions}
             board = hand["flop"] + [hand["turn"]] + [hand["river"]]
-            winner = cls.get_winner(pre_flop, board)
-        pot = sum(position_bets.values())
-        for pos in position_bets.keys():
+            winner = cls._get_winner(pre_flop, board)
+        pot = sum(pos_bets.values())
+        for pos in pos_bets.keys():
             if pos == winner:
-                position_stacks[pos] += pot - position_bets[winner]
-            else:
-                position_stacks[pos] -= position_bets[pos]
+                pos_stacks[pos] += pot
+        for pos in pos_bets:
+            pos_bets[pos] = 0
 
     @classmethod
-    def get_stacks(cls, game: dict):
-        positions = list(game["meta"]["players"].keys())
-        position_stacks = {pos: game["meta"]["buy_in"] for pos in positions}
+    def get_player_names_and_blinds(cls, game: dict):
+        position_names = game["meta"]["players"]
+        res = {"players": position_names}
+
+        curr_hand_index = len(game["hands"]) - 1
+        res["small_blind_pos"] = (curr_hand_index + 1) % len(position_names)
+        res["big_blind_pos"] = (curr_hand_index + 2) % len(position_names)
+
+        return res
+
+    @classmethod
+    def get_bets_and_stacks(cls, game: dict):
+        positions = game["meta"]["players"].keys()
+        pos_stacks = {pos: game["meta"]["buy_in"] for pos in positions}
         sb = game["meta"]["small_blind"]
         bb = game["meta"]["big_blind"]
 
         for hand_index, hand in enumerate(game["hands"]):
-            if hand["status"] != Status.ENDED.value:
-                raise Exception("Can not compute stacks when all hands are not ended")
 
             dealer_index = hand_index % len(positions)
-            is_hand_over = False
-            position_bets = {pos: 0 for pos in positions}
+            pos_bets = {pos: 0 for pos in positions}
 
-            it = PositionIterator(positions, dealer_index)
-            position_bets[next(it)] = sb # Skip SB
-            position_bets[next(it)] = bb # Skip BB
-            for action in hand["pre_flop_bets"]:
-                is_hand_over |= cls.handle_action(it, action, position_bets)
+            it = PosIterator(positions, dealer_index)
+            for blind in [sb, bb]:
+                pos = it.next()
+                pos_bets[pos] += blind
+                pos_stacks[pos] -= blind
 
-            if not is_hand_over:
+            if "pre_flop_bets" not in hand: break
+            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks)
+
+            if is_betting_over and not is_over_by_fold:
                 it.reset()
-                for action in hand["flop_bets"]:
-                    is_hand_over |= cls.handle_action(it, action, position_bets)
-
-            if not is_hand_over:
-                it.reset()
-                for action in hand["turn_bets"]:
-                    is_hand_over |= cls.handle_action(it, action, position_bets)
-
-            if not is_hand_over:
-                it.reset()
-                for action in hand["river_bets"]:
-                    cls.handle_action(it, action, position_bets)
+                if "flop_bets" not in hand: break
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks)
             
-            cls.handle_hand_over(it, hand, position_bets, position_stacks)
+            if is_betting_over and not is_over_by_fold:
+                it.reset()
+                if "turn_bets" not in hand: break
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks)
 
-        return position_stacks
+            if is_betting_over and not is_over_by_fold:
+                it.reset()
+                if "river_bets" not in hand: break
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks)
+            
+            if is_betting_over:
+                cls._handle_hand_end(it, hand, pos_bets, pos_stacks)
 
+        return {"bets": pos_bets, "stacks": pos_stacks}
 
 import json
 
 with open("example_game.json", "r") as f:
     game = json.load(f)
-
-    print(Parser.get_stacks(game))
+    print(Parser.get_player_names_and_blinds(game))
+    print(Parser.get_bets_and_stacks(game))
