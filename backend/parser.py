@@ -54,7 +54,7 @@ class PosIterator:
 class Parser:
 
     @staticmethod
-    def _handle_actions(it: PosIterator, actions: list, pos_bets: dict, pos_stacks: dict):
+    def _handle_actions(it: PosIterator, actions: list, pos_bets: dict, pos_stacks: dict, pos_last_actions: dict):
         last_raise_pos = None
         start_pos = it.peek()
 
@@ -80,6 +80,8 @@ class Parser:
                 last_raise_pos = pos
             else:
                 raise Exception("Invalid betting action")
+            
+            pos_last_actions[pos] = action
 
         is_over_by_fold = len(it.remaining()) == 1
 
@@ -120,7 +122,7 @@ class Parser:
             pos_bets[pos] = 0
 
     @classmethod
-    def get_player_names_and_blinds(cls, game: dict):
+    def get_position_data(cls, game: dict):
         position_names = game["meta"]["players"]
         res = {"players": position_names}
 
@@ -129,11 +131,25 @@ class Parser:
         res["big_blind_pos"] = (curr_hand_index + 2) % len(position_names)
 
         return res
+    
+    @classmethod
+    def get_card_data(cls, game):
+        curr_hand = game["hands"][-1]
+        board = []
+        if "flop" in curr_hand:
+            board += curr_hand["flop"]
+        if "turn" in curr_hand:
+            board.append(curr_hand["turn"])
+        if "river" in curr_hand:
+            board.append(curr_hand["river"])
+
+        return {"holes": curr_hand["pre_flop"], "board": board}
 
     @classmethod
-    def get_bets_and_stacks(cls, game: dict):
+    def get_state(cls, game: dict):
         positions = game["meta"]["players"].keys()
         pos_stacks = {pos: game["meta"]["buy_in"] for pos in positions}
+        pos_last_actions = {pos: "" for pos in positions}
         sb = game["meta"]["small_blind"]
         bb = game["meta"]["big_blind"]
 
@@ -149,31 +165,34 @@ class Parser:
                 pos_stacks[pos] -= blind
 
             if "pre_flop_bets" not in hand: break
-            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks)
+            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks, pos_last_actions)
 
             if is_betting_over and not is_over_by_fold:
                 it.reset()
                 if "flop_bets" not in hand: break
-                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks)
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks, pos_last_actions)
             
             if is_betting_over and not is_over_by_fold:
                 it.reset()
                 if "turn_bets" not in hand: break
-                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks)
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks, pos_last_actions)
 
             if is_betting_over and not is_over_by_fold:
                 it.reset()
                 if "river_bets" not in hand: break
-                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks)
+                is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks, pos_last_actions)
             
             if is_betting_over:
                 cls._handle_hand_end(it, hand, pos_bets, pos_stacks)
 
-        return {"bets": pos_bets, "stacks": pos_stacks}
+        curr_player = it.peek()
+        pot = sum(pos_bets.values())
+        return {"curr_player": curr_player, "pot": pot, "bets": pos_bets, "stacks": pos_stacks, "last_actions": pos_last_actions}
 
-import json
-
-with open("example_game.json", "r") as f:
-    game = json.load(f)
-    print(Parser.get_player_names_and_blinds(game))
-    print(Parser.get_bets_and_stacks(game))
+    @classmethod
+    def get_everything(cls, game: dict):
+        return {
+            "positions": cls.get_position_data(game),
+            "cards": cls.get_card_data(game),
+            "state": cls.get_state(game)
+        }

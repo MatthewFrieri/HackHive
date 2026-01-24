@@ -55,7 +55,10 @@
         "1": ["8h", "Qs"],
         "2": ["9h", "Ks"]
       },
-      "pre_flop_bets": ["C", "R10", "F", "F"]
+      "pre_flop_bets": ["C", "R10", "F", "C"],
+
+      "flop": ["Ac", "Ad", "Ts"],
+      "flop_bets": ["X", "R20"]
     }
   ]
 }
