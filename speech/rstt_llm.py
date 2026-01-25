@@ -74,6 +74,9 @@ def llm_parse_action(text: str) -> dict:
 class STT:
     def __init__(self):
         self.recorder = AudioToTextRecorder()
+        self.listening = False
+        self.lock = threading.Lock()
+
         self.current_action = None
         self.current_action_time = time.time()
         self.lock = threading.Lock()
@@ -89,8 +92,7 @@ class STT:
         print(f"RAW ASR: {text}")
 
         result = llm_parse_action(text)
-
-        print(f"\nLLM RESULT: {result}")
+        print(f"LLM RESULT: {result}")
 
         confidence = result.get("confidence", 0.0)
         action = result.get("action", "NONE")
@@ -104,7 +106,6 @@ class STT:
             print("No action detected")
             return
 
-        # Encode poker action
         if action == "RAISE":
             if amount is None:
                 print("Raise without amount, ignoring")
@@ -117,19 +118,20 @@ class STT:
                 "FOLD": "F"
             }.get(action)
 
-        if action_emb is None:
+        if not action_emb:
             return
 
         with self.lock:
-            self.current_action_time = time.time()
             self.current_action = action_emb
+            self.current_action_time = time.time()
 
         print(f"ACTION_EMB: {action_emb}")
+
 
     def run(self):
         try:
             while True:
-                self.recorder.text(self.parse)
+                time.sleep(0.1)
         except KeyboardInterrupt:
             print("\nStopped.")
 
