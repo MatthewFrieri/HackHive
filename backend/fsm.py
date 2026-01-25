@@ -69,7 +69,8 @@ class HandFSM:
         while True:
 
             if self.state == State.DEAL_PRE_FLOP:
-                self.esp.deal_preflop()
+                sb_pos = Parser.get_position_data(self.game_dict)["small_blind_pos"]
+                self.esp.deal_preflop(sb_pos)
                 time.sleep(5)
                 self.state = State.BET_PRE_FLOP
 
@@ -80,13 +81,13 @@ class HandFSM:
                 self.do_bet()
 
             elif self.state == State.DEAL_FLOP:
-                self.show_steet(3)
+                self.show_street(3)
 
             elif self.state == State.BET_FLOP:
                 self.do_bet()
 
             elif self.state == State.DEAL_TURN:
-                self.show_steet(1)
+                self.show_street(1)
 
             elif self.state == State.BET_TURN:
                 self.do_bet()

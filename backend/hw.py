@@ -2,14 +2,16 @@ import serial
 
 class ESP:
 
-    def __init__(self, players):
-        self.players = players
+    def __init__(self, num_players):
+        self.num_players = num_players
         self.esp32 = serial.Serial(port='COM6', baudrate=115200)  # COM port might need to be changed
         
-    def deal_preflop(self, offset):
-        for _ in range(self.players):
+    def deal_preflop(self, start_pos):
+        for i in range(self.num_players):
+            pos = (i + start_pos) % self.num_players
+            angle = pos * 180 / (self.num_players - 1)
+            self.turn(angle)
             self.deal(2)
-            self.turn(30)
     
     def deal_n(self, n):
         self.deal(n)
