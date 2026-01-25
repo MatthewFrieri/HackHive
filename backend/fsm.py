@@ -2,6 +2,7 @@ from enum import IntEnum
 from backend.speech.rstt import STT
 from backend.speech.betting import bet
 from backend.hw import ESP
+from backend.parser import Parser
 import time
 import json
 
@@ -47,6 +48,22 @@ class HandFSM:
     def start_new_hand(self): 
         self.state = State.DEAL_PRE_FLOP
 
+    def show_street(self, num_cards):
+        self.esp.deal_n(num_cards)
+        time.sleep(5)
+        self.state += 1
+
+        # state update for flop
+        self.write_to_json()
+
+    def do_bet(self):
+        bet(self.path, self.stt)
+        self.read_from_json()
+        if not Parser.get_curr_stage():
+            self.start_new_hand()
+        else:
+            self.state += 1
+
     def run(self):
 
         while True:
@@ -60,48 +77,25 @@ class HandFSM:
                 self.write_to_json()
 
             elif self.state == State.BET_PRE_FLOP:
-                bet(self.path, self.stt)
-                self.read_from_json()
-                self.state = State.DEAL_FLOP
+                self.do_bet()
 
             elif self.state == State.DEAL_FLOP:
-                self.esp.deal_flop()
-                time.sleep(5)
-                self.state = State.BET_PRE_FLOP
-
-                # state update for flop
-                self.write_to_json()
+                self.show_steet(3)
 
             elif self.state == State.BET_FLOP:
-                bet(self.path, self.stt)
-                self.read_from_json()
-                self.state = State.DEAL_TURN
+                self.do_bet()
 
             elif self.state == State.DEAL_TURN:
-                self.esp.deal_one()
-                time.sleep(3)
-                self.state = State.BET_TURN
-
-                # state update for turn
-                self.write_to_json()
+                self.show_steet(1)
 
             elif self.state == State.BET_TURN:
-                bet(self.path, self.stt)
-                self.read_from_json()
-                self.state = State.DEAL_RIVER
+                self.do_bet()
 
             elif self.state == State.DEAL_RIVER:
-                self.esp.deal_one()
-                time.sleep(3)
-                self.state = State.BET_RIVER
-
-                # state update for river
-                self.write_to_json()
+                self.show_street(1)
 
             elif self.state == State.BET_RIVER:
-                bet(self.path, self.stt)
-                self.read_from_json()
-                self.state = State.SHOWDOWN
+                self.do_bet()
 
             # dont think we need this
             elif self.state == State.SHOWDOWN:

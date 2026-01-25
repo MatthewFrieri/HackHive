@@ -5,18 +5,14 @@ class ESP:
     def __init__(self, players):
         self.players = players
         self.esp32 = serial.Serial(port='COM6', baudrate=115200)  # COM port might need to be changed
- 
-
+        
     def deal_preflop(self, offset):
         for _ in range(self.players):
             self.deal(2)
             self.turn(30)
     
-    def deal_flop(self):
-        self.deal(3)
-
-    def deal_one(self):
-        self.deal(1)
+    def deal_n(self, n):
+        self.deal(n)
 
     def turn(self, angle):
         # Command robot rotation angle (0-270 degs)
@@ -31,5 +27,3 @@ class ESP:
         command = command.encode("utf-8")
         #print(command)
         self.esp32.write(command)
-
-    

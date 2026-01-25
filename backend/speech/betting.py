@@ -18,3 +18,8 @@ def bet(path, stt):
         if stage not in game['hands'][-1].keys():
             game['hands'][-1][stage] = {}
         game['hands'][-1][stage] = new_state[1]
+
+        with open(path, "w") as f:
+            json.dump(game, f)
+
+        time.sleep(0.5)
