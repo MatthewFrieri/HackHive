@@ -1,8 +1,5 @@
-import os
 import threading
 import time
-
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 from RealtimeSTT import AudioToTextRecorder
 
 VOCAB = {
