@@ -9,10 +9,6 @@ class Action(Enum):
     CALL = "C"
     RAISE = "R"
 
-class Status(Enum):
-    ONGOING = "ongoing"
-    ENDED = "ended"
-
 class PosIterator:
     # Starts iterating on the small blind
 
@@ -136,7 +132,12 @@ class Parser:
     
     @classmethod
     def get_card_data(cls, game):
-        curr_hand = game["hands"][-1]
+        if len(game['hands']) == 0:
+            curr_hand = {}
+            game['hands'].append(curr_hand)
+        else:
+            curr_hand = game["hands"][-1]
+
         board = []
         if "flop" in curr_hand:
             board += curr_hand["flop"]
@@ -230,7 +231,11 @@ class Parser:
         sb = game["meta"]["small_blind"]
         bb = game["meta"]["big_blind"]
 
-        hand = game["hands"][-1]
+        if len(game['hands']) == 0:
+            hand = {}
+            game['hands'].append(hand)
+        else:
+            hand = game["hands"][-1]
 
         it = PosIterator(positions, 0)
         for blind in [sb, bb]:
@@ -238,25 +243,25 @@ class Parser:
             pos_bets[pos] += blind
             pos_stacks[pos] -= blind
 
-        if "pre_flop_bets" not in hand: return "pre_flop_bets"
+        if "pre_flop_bets" not in hand: return ""
         is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks, pos_last_actions)
         if not is_betting_over: return "pre_flop_bets"
         
         if not is_over_by_fold:
             it.reset()
-            if "flop_bets" not in hand: return "flop_bets"
+            if "flop_bets" not in hand: return ""
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "flop_bets"
 
         if not is_over_by_fold:
             it.reset()
-            if "turn_bets" not in hand: return "turn_bets"
+            if "turn_bets" not in hand: return ""
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "turn_bets"
 
         if not is_over_by_fold:
             it.reset()
-            if "river_bets" not in hand: return "river_bets"
+            if "river_bets" not in hand: return ""
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "river_bets"
 

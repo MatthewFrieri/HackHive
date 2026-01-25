@@ -1,4 +1,3 @@
-import sys
 import json
 import threading
 import time
@@ -116,7 +115,7 @@ class STT:
 
         print(f"RAW ASR: {text}")
         result = llm_parse_action(text)
-        print(f"LLM RESULT: {result}")
+        print(f"\nLLM RESULT: {result}")
 
         confidence = result.get("confidence", 0.0)
         action = result.get("action", "NONE")
@@ -153,8 +152,18 @@ if __name__ == "__main__":
     stt = STT()
     stt.start()
 
-    while True:
+    old_state = stt.get_state()
+    new_state = old_state
+    while new_state == old_state:
+        new_state = stt.get_state()
         time.sleep(0.5)
-        ts, action = stt.get_state()
-        if action:
-            print("Latest:", ts, action)
+    print(f"GOT NEW STATE: {new_state[1]}")
+
+    old_state = stt.get_state()
+    new_state = old_state
+    while new_state == old_state:
+        new_state = stt.get_state()
+        time.sleep(0.5)
+    print(f"GOT NEW STATE: {new_state[1]}")
+
+

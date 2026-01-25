@@ -1,7 +1,5 @@
 {
   "meta": {
-    "status": "ongoing",
-
     "players": {
       "0": "mat",
       "1": "dav",
@@ -14,8 +12,6 @@
 
   "hands": [
     {
-      "status": "ended",
-
       "pre_flop": {
         "0": ["7h", "Js"],
         "1": ["8h", "Qs"],
@@ -34,8 +30,6 @@
     },
 
     {
-      "status": "ended",
-
       "pre_flop": {
         "0": ["7h", "Js"],
         "1": ["8h", "Qs"],
@@ -48,8 +42,6 @@
     },
 
     {
-      "status": "ended",
-
       "pre_flop": {
         "0": ["7h", "Js"],
         "1": ["8h", "Qs"],
