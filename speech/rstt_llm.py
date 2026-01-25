@@ -1,3 +1,4 @@
+import sys
 import json
 import threading
 import time
@@ -68,6 +69,7 @@ def llm_parse_action(text: str) -> dict:
     except Exception as e:
         print(f"[LLM ERROR] {e}")
         return {"action": "NONE", "amount": None, "confidence": 0.0}
+
 
 class STT:
     def __init__(self):

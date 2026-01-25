@@ -53,6 +53,9 @@ class STT:
         except KeyboardInterrupt:
             print("\nStopped")
 
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
 
 if __name__ == "__main__":
     S = STT()
