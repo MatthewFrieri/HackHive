@@ -1,6 +1,7 @@
 from enum import Enum
-import json
 from treys import Card, Evaluator
+
+from equity_calculator.table import HoldemTable
 
 class Action(Enum):
     FOLD = "F"
@@ -188,7 +189,37 @@ class Parser:
 
         curr_player = it.peek()
         pot = sum(pos_bets.values())
-        return {"curr_player": curr_player, "pot": pot, "bets": pos_bets, "stacks": pos_stacks, "last_actions": pos_last_actions}
+        return {
+            "curr_player": curr_player, 
+            "pot": pot, 
+            "bets": pos_bets, 
+            "stacks": pos_stacks, 
+            "last_actions": pos_last_actions
+        }
+    
+    @classmethod
+    def get_equity_data(cls, game: dict):
+        positions = game["meta"]["players"].keys()
+        card_data = cls.get_card_data(game)
+        table = HoldemTable(num_players=len(positions), deck_type="full")
+
+        for position in positions:
+            player_num = int(position) + 1
+            table.add_to_hand(player_num, card_data["holes"][position])
+        
+        table.add_to_community(card_data["board"])
+        equities = table.simulate(odds_type="win_any")
+        
+        for k in list(equities.keys()):
+            if "Player" in k:
+                player_num = int(k.split(" ")[-1])
+                equities[str(player_num - 1)] = equities[k]
+                del equities[k]
+        return equities
+    
+    @classmethod
+    def get_meta_data(cls, game: dict):
+        return {k:v for k,v in game["meta"].items() if k in ["small_blind", "big_blind", "buy_in"]}
 
     @classmethod
     def get_curr_stage(cls, game: dict):
@@ -236,5 +267,7 @@ class Parser:
         return {
             "positions": cls.get_position_data(game),
             "cards": cls.get_card_data(game),
-            "state": cls.get_state(game)
+            "state": cls.get_state(game),
+            "equities": cls.get_equity_data(game),
+            "meta": cls.get_meta_data(game),
         }

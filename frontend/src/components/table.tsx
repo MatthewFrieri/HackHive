@@ -3,6 +3,7 @@ import Player from "./player";
 import Pot from "./pot";
 import Board from "./board";
 import { useEffect, useState } from "react";
+import GameMeta from "./game_meta";
 
 export default function Table() {
   const { gameData } = useGameData();
@@ -28,6 +29,9 @@ export default function Table() {
 
   return (
     <div className="relative flex flex-col pt-20">
+      <span className="-mt-12 ml-12">
+        <GameMeta />
+      </span>
       <div className="flex justify-center mb-20">
         <Board cards={board_cards} />
       </div>
