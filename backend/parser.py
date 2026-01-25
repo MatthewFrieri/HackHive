@@ -131,7 +131,12 @@ class Parser:
     
     @classmethod
     def get_card_data(cls, game):
-        curr_hand = game["hands"][-1]
+        if len(game['hands']) == 0:
+            curr_hand = {}
+            game['hands'].append(curr_hand)
+        else:
+            curr_hand = game["hands"][-1]
+
         board = []
         if "flop" in curr_hand:
             board += curr_hand["flop"]
@@ -195,7 +200,11 @@ class Parser:
         sb = game["meta"]["small_blind"]
         bb = game["meta"]["big_blind"]
 
-        hand = game["hands"][-1]
+        if len(game['hands']) == 0:
+            hand = {}
+            game['hands'].append(hand)
+        else:
+            hand = game["hands"][-1]
 
         it = PosIterator(positions, 0)
         for blind in [sb, bb]:

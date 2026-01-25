@@ -21,21 +21,21 @@ class State(IntEnum):
 
 class HandFSM:
 
-    def init(self, metadata: dict, path='backend/game.json'):
+    def __init__(self, metadata: dict, path='backend/game.json'):
         self.meta = metadata
         self.game_dict = {
             "meta": self.meta,
             "hands": []
         }
-        self.write_to_json()
 
         self.path = path
         self.stt = STT()
-        self.stt.run()
+        self.stt.start()
 
-        self.esp = ESP()
+        self.esp = ESP(len(self.meta['players']))
 
         self.start_new_hand()
+        self.write_to_json()
 
     def read_from_json(self):
         with open(self.path, "r") as f:
@@ -78,18 +78,24 @@ class HandFSM:
                 self.write_to_json()
 
             elif self.state == State.BET_PRE_FLOP:
+                print("PRE FLOB BETTING")
                 self.do_bet()
+                print("PRE FLOP BETTING DONE")
 
             elif self.state == State.DEAL_FLOP:
+                print("DEALING FLOP")
                 self.show_street(3)
 
             elif self.state == State.BET_FLOP:
+                print("FLOP BETTING")
                 self.do_bet()
 
             elif self.state == State.DEAL_TURN:
+                print("DEALING TURN")
                 self.show_street(1)
 
             elif self.state == State.BET_TURN:
+                print("TURN BETTING")
                 self.do_bet()
 
             elif self.state == State.DEAL_RIVER:
@@ -101,3 +107,18 @@ class HandFSM:
             # dont think we need this
             elif self.state == State.SHOWDOWN:
                 self.state = State.DEAL_PRE_FLOP
+
+if __name__ == '__main__':
+    F = HandFSM({
+        "status": "ongoing",
+
+        "players": {
+        "0": "mat",
+        "1": "dav",
+        "2": "adr"
+        },
+        "big_blind": 10,
+        "small_blind": 5,
+        "buy_in": 200
+    })
+    F.run()
