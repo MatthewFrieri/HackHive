@@ -1,6 +1,11 @@
 # Visual Studio Code
 .vscode
 
+pretrained_models
+*env.sh
+*.log
+*.ps1
+
 # Logs
 logs
 *.log
