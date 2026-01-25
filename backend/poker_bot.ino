@@ -39,7 +39,7 @@ void dispense(int card_num){
 }
 
 void turn(int angle){
-  myServo.write(angle * 0.74444);
+  myServo.write(angle);
 }
 
 void loop() {
