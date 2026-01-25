@@ -6,17 +6,24 @@ from parser import Parser
 from fsm import HandFSM
 
 app = Flask(__name__)
-CORS(app)
+
+# Allow all origins, allow credentials, and handle OPTIONS preflight
+CORS(app, supports_credentials=True)
 
 @app.route("/data", methods=["GET"])
 def data():
-    f = open("example_game.json", "r")
-    game = json.load(f)
+    with open("example_game.json", "r") as f:
+        game = json.load(f)
     return jsonify(Parser.get_everything(game))
 
-@app.route("/start_game", methods=["POST"])
+@app.route("/start_game", methods=["POST", "OPTIONS"])  # add OPTIONS here
 def start_game():
+    if request.method == "OPTIONS":
+        # Preflight request, return only headers
+        return '', 200
+
     data = request.get_json()
+    print("Received start_game data:", data)
 
     game_dict = {
         "meta": {
