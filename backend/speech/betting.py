@@ -1,4 +1,4 @@
-from backend.parser import Parser
+from parser import Parser
 import time
 import json
 

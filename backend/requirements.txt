@@ -7,9 +7,9 @@ Jinja2==3.1.6
 joblib==1.5.3
 MarkupSafe==3.0.3
 numpy==2.4.1
-scipy==1.17.0
-spicy==0.16.0
+scipy==1.15.2
 treys==0.1.8
 Werkzeug==3.1.5
 openai==2.15.0
 realtimestt==0.3.104
+pyserial==3.5
