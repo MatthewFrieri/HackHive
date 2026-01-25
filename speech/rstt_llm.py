@@ -72,9 +72,39 @@ def llm_parse_action(text: str) -> dict:
 class STT:
     def __init__(self):
         self.recorder = AudioToTextRecorder()
+        self.listening = False
+        self.lock = threading.Lock()
+
         self.current_action = None
         self.current_action_time = time.time()
-        self.lock = threading.Lock()
+
+        self._thread = threading.Thread(target=self._listen_loop, daemon=True)
+    
+    def get_state(self):
+        return (self.current_action_time, self.current_action)
+
+    def start_listening(self):
+        with self.lock:
+            if not self.listening:
+                self.listening = True
+                print("Listening ON")
+
+    def stop_listening(self):
+        with self.lock:
+            self.listening = False
+            print("Listening OFF")
+
+
+    def _listen_loop(self):
+        while True:
+            self.recorder.text(self._maybe_parse)
+
+    def _maybe_parse(self, text: str):
+        with self.lock:
+            if not self.listening:
+                return
+        self.parse(text)
+
 
     def parse(self, text: str):
         if not text.strip():
@@ -83,8 +113,7 @@ class STT:
         print(f"RAW ASR: {text}")
 
         result = llm_parse_action(text)
-
-        print(f"\nLLM RESULT: {result}")
+        print(f"LLM RESULT: {result}")
 
         confidence = result.get("confidence", 0.0)
         action = result.get("action", "NONE")
@@ -98,7 +127,6 @@ class STT:
             print("No action detected")
             return
 
-        # Encode poker action
         if action == "RAISE":
             if amount is None:
                 print("Raise without amount, ignoring")
@@ -111,24 +139,25 @@ class STT:
                 "FOLD": "F"
             }.get(action)
 
-        if action_emb is None:
+        if not action_emb:
             return
 
         with self.lock:
-            self.current_action_time = time.time()
             self.current_action = action_emb
+            self.current_action_time = time.time()
 
         print(f"ACTION_EMB: {action_emb}")
 
+
     def run(self):
-        print("Wait until it says 'speak now'")
+        print("Recorder ready. Call start_listening() / stop_listening().")
+        self._thread.start()
 
         try:
             while True:
-                self.recorder.text(self.parse)
+                time.sleep(0.1)
         except KeyboardInterrupt:
             print("\nStopped.")
-
 
 if __name__ == "__main__":
     stt = STT()
