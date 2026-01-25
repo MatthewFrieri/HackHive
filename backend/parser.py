@@ -243,29 +243,32 @@ class Parser:
             pos_bets[pos] += blind
             pos_stacks[pos] -= blind
 
-        if "pre_flop_bets" not in hand: return ""
+        if "pre_flop_bets" not in hand: return "pre_flop_bets"
         is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks, pos_last_actions)
         if not is_betting_over: return "pre_flop_bets"
+        elif "flop" not in hand: return ""
         
         if not is_over_by_fold:
             it.reset()
-            if "flop_bets" not in hand: return ""
+            if "flop_bets" not in hand: return "flop_bets"
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "flop_bets"
+            elif "turn" not in hand: return ""
 
         if not is_over_by_fold:
             it.reset()
-            if "turn_bets" not in hand: return ""
+            if "turn_bets" not in hand: return "turn_bets"
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "turn_bets"
+            elif "river" not in hand: return ""
 
         if not is_over_by_fold:
             it.reset()
-            if "river_bets" not in hand: return ""
+            if "river_bets" not in hand: return "river_bets"
             is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks, pos_last_actions)
             if not is_betting_over: return "river_bets"
 
-        return ""
+        return "showdown"
 
     @classmethod
     def get_everything(cls, game: dict):
