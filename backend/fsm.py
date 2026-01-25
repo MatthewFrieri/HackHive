@@ -1,8 +1,8 @@
 from enum import IntEnum
-from backend.speech.rstt import STT
-from backend.speech.betting import bet
-from backend.hw import ESP
-from backend.parser import Parser
+from speech.rstt import STT
+from speech.betting import bet
+from hw import ESP
+from parser import Parser
 import time
 import json
 

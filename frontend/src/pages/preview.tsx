@@ -1,6 +1,6 @@
 import Table from "@/components/table";
 import { useEffect } from "react";
-import { getData } from "../../api"
+import { getData } from "../api"
 import { useGameData } from "@/contexts/game_data_context";
 
 export default function PreviewPage() {
