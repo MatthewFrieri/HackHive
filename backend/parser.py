@@ -1,4 +1,5 @@
 from enum import Enum
+import json
 from treys import Card, Evaluator
 
 class Action(Enum):
@@ -188,6 +189,47 @@ class Parser:
         curr_player = it.peek()
         pot = sum(pos_bets.values())
         return {"curr_player": curr_player, "pot": pot, "bets": pos_bets, "stacks": pos_stacks, "last_actions": pos_last_actions}
+
+    @classmethod
+    def get_curr_stage(cls, game: dict):
+        positions = game["meta"]["players"].keys()
+        pos_bets = {pos: 0 for pos in positions}
+        pos_stacks = {pos: game["meta"]["buy_in"] for pos in positions}
+        pos_last_actions = {pos: "" for pos in positions}
+        sb = game["meta"]["small_blind"]
+        bb = game["meta"]["big_blind"]
+
+        hand = game["hands"][-1]
+
+        it = PosIterator(positions, 0)
+        for blind in [sb, bb]:
+            pos = it.next()
+            pos_bets[pos] += blind
+            pos_stacks[pos] -= blind
+
+        if "pre_flop_bets" not in hand: return "pre_flop_bets"
+        is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["pre_flop_bets"], pos_bets, pos_stacks, pos_last_actions)
+        if not is_betting_over: return "pre_flop_bets"
+        
+        if not is_over_by_fold:
+            it.reset()
+            if "flop_bets" not in hand: return "flop_bets"
+            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["flop_bets"], pos_bets, pos_stacks, pos_last_actions)
+            if not is_betting_over: return "flop_bets"
+
+        if not is_over_by_fold:
+            it.reset()
+            if "turn_bets" not in hand: return "turn_bets"
+            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["turn_bets"], pos_bets, pos_stacks, pos_last_actions)
+            if not is_betting_over: return "turn_bets"
+
+        if not is_over_by_fold:
+            it.reset()
+            if "river_bets" not in hand: return "river_bets"
+            is_betting_over, is_over_by_fold = cls._handle_actions(it, hand["river_bets"], pos_bets, pos_stacks, pos_last_actions)
+            if not is_betting_over: return "river_bets"
+
+        return ""
 
     @classmethod
     def get_everything(cls, game: dict):
