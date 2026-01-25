@@ -74,16 +74,9 @@ def llm_parse_action(text: str) -> dict:
 class STT:
     def __init__(self):
         self.recorder = AudioToTextRecorder()
-        self.listening = False
-        self.lock = threading.Lock()
-
         self.current_action = None
         self.current_action_time = time.time()
         self.lock = threading.Lock()
-
-    def get_state(self):
-        with self.lock:
-            return (self.current_action, self.current_action_time)
 
     def parse(self, text: str):
         if not text.strip():
@@ -92,7 +85,8 @@ class STT:
         print(f"RAW ASR: {text}")
 
         result = llm_parse_action(text)
-        print(f"LLM RESULT: {result}")
+
+        print(f"\nLLM RESULT: {result}")
 
         confidence = result.get("confidence", 0.0)
         action = result.get("action", "NONE")
@@ -106,6 +100,7 @@ class STT:
             print("No action detected")
             return
 
+        # Encode poker action
         if action == "RAISE":
             if amount is None:
                 print("Raise without amount, ignoring")
@@ -118,30 +113,24 @@ class STT:
                 "FOLD": "F"
             }.get(action)
 
-        if not action_emb:
+        if action_emb is None:
             return
 
         with self.lock:
-            self.current_action = action_emb
             self.current_action_time = time.time()
+            self.current_action = action_emb
 
         print(f"ACTION_EMB: {action_emb}")
 
-
     def run(self):
+        print("Wait until it says 'speak now'")
+
         try:
             while True:
-                time.sleep(0.1)
+                self.recorder.text(self.parse)
         except KeyboardInterrupt:
             print("\nStopped.")
 
-    def get_next_state(self):
-        old_state = self.get_state()
-        new_state = old_state
-        while new_state == old_state:
-            new_state = self.get_state() 
-            time.sleep(0.01)
-        return new_state
 
 if __name__ == "__main__":
     stt = STT()
