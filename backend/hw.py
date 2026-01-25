@@ -15,7 +15,9 @@ class ESP:
             self.deal(2)
     
     def deal_n(self, n):
-        self.deal(n)
+        for _ in range(n):
+            self.deal(1)
+            time.sleep(2.5)
 
     def turn(self, angle):
         # Command robot rotation angle (0-270 degs)
@@ -34,7 +36,9 @@ class ESP:
 
 if __name__ == '__main__':
     e = ESP(3)
-    e.deal_n(1)
+    for _ in range(10):
+        e.deal_n(1)
+        time.sleep(3)
     # e.deal_preflop(0)
     # e.turn(0)
 
