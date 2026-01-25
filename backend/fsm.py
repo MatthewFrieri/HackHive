@@ -21,7 +21,7 @@ class State(IntEnum):
 
 class HandFSM:
 
-    def __init__(self, metadata: dict, path='backend/game.json'):
+    def __init__(self, metadata: dict, path='game.json'):
         self.meta = metadata
         self.game_dict = {
             "meta": self.meta,
@@ -59,7 +59,7 @@ class HandFSM:
     def do_bet(self):
         bet(self.path, self.stt)
         self.read_from_json()
-        if not Parser.get_curr_stage():
+        if Parser.get_curr_stage(self.game_dict) == 'showdown':
             self.start_new_hand()
         else:
             self.state += 1
