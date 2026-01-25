@@ -1,18 +1,15 @@
 from backend.parser import Parser
+import time
 import json
 
 def bet(path, stt):
-
     while Parser.get_curr_stage().endswith('bets'):
 
         old_state = stt.get_state()
-        stt.start_listening()
-
         new_state = old_state
         while new_state == old_state:
+            time.sleep(0.5)
             new_state = stt.get_state()
-
-        stt.stop_listening()
 
         with open(path, "r") as f:
             game = json.load(f)
